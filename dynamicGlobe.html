@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <style> body { margin: 0; } </style>
+      
+        <script src="//unpkg.com/globe.gl"></script>
+      <!--  <script src="../../dist/globe.gl.js"></script>-->
+      </head>
+      
+      <body>
+        <div id="globeViz"></div>
+      
+        <script>
+          // Gen random data
+          const N = 300;
+          const PLACE = "Hong Kong";
+          const MAP_CENTER = { lat: 37.6, lng: -16.6, altitude: 0.4 };
+          function getLocation()
+          {
+            if(navigator.geolocation)
+            {
+                navigator.geolocation.watchPosition
+            }
+
+          }
+      
+          const myGlobe = Globe()
+          (document.getElementById('globeViz'))
+            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            .pointOfView({ lat: 22.3, lng:114.1, altitude: 2 })
+
+            .arcLabel(d => `${d.findingID} ${d.emotion} ${d.how} ${d.where}`)
+            .arcStartLat(22.3)
+            .arcStartLng(114.1)
+            .arcEndLat(d => +d.dstAirport.lat)
+            .arcEndLng(d => +d.dstAirport.lng)
+
+            .pointAltitude('size')
+            .pointColor('color')
+
+          //load Google Form data
+
+          const FindingsParse = ([timestamp, findingID, how, where, origin, emotion, email]) => ({ timestamp, findingID, how, where, origin, emotion, email})
+          const CountryParse = ([country, lat, lng, name]) => ([country, lat, lng, name])
+
+          Promise.all([
+            fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQfSw3lFV-lNn3Lo3Qav1LbGN24x8FSKKL5xDh2fjLiPQNUhUVfYQU0IGyhbZWs4u0QYmVog0k5ayPo/pub?output=csv').then(res => res.text())
+            .then(d => d3.csvParseRows(d, FindingsParse)), 
+            fetch('https://developers.google.com/public-data/docs/canonical/countries_csv').then(res => res.text())
+            .then(d => d3.csvParseRows(d, CountryParse))
+            ]).then(([findings, countries]) => 
+            {
+                
+
+                myGlobe
+                .pointsData(findings)
+            })
+      
+        </script>
+      </body>
+</html>
+
