@@ -9,20 +9,27 @@
       
       <body>
         <div id="globeViz"></div>
+        <h1>d.emotion</h1>
       
         <script>
           // Gen random data
           const N = 300;
           const PLACE = "Hong Kong";
           const MAP_CENTER = { lat: 37.6, lng: -16.6, altitude: 0.4 };
-          function getLocation()
-          {
-            if(navigator.geolocation)
-            {
-                navigator.geolocation.watchPosition
-            }
 
-          }
+           // Fetch coordinates from Restcountries API
+        function fetchCoordinates(country) {
+            return fetch(`https://restcountries.com/v3.1/name/${country}`)
+                .then(response => response.json())
+                .then(data => {
+                    const countryData = data[0];
+                    return { lat: countryData.latlng[0], lng: countryData.latlng[1] };
+                })
+                .catch(error => {
+                    console.error('Error fetching coordinates:', error);
+                });
+        }
+    
       
           const myGlobe = Globe()
           (document.getElementById('globeViz'))
@@ -41,16 +48,12 @@
           //load Google Form data
 
           const FindingsParse = ([timestamp, findingID, how, where, origin, emotion, email]) => ({ timestamp, findingID, how, where, origin, emotion, email})
-          const CountryParse = ([country, lat, lng, name]) => ([country, lat, lng, name])
 
-          Promise.all([
+          Promise.all(
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQfSw3lFV-lNn3Lo3Qav1LbGN24x8FSKKL5xDh2fjLiPQNUhUVfYQU0IGyhbZWs4u0QYmVog0k5ayPo/pub?output=csv').then(res => res.text())
-            .then(d => d3.csvParseRows(d, FindingsParse)), 
-            fetch('https://developers.google.com/public-data/docs/canonical/countries_csv').then(res => res.text())
-            .then(d => d3.csvParseRows(d, CountryParse))
-            ]).then(([findings, countries]) => 
+            .then(d => d3.csvParseRows(d, FindingsParse))
+            ).then((findings) => 
             {
-                
 
                 myGlobe
                 .pointsData(findings)

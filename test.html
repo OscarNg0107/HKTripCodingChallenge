@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Globe with Arcs from Hong Kong</title>
+    <style> body { margin: 0; } </style>
+      
+    <script src="//unpkg.com/globe.gl"></script>
+  <!--  <script src="../../dist/globe.gl.js"></script>-->
+</head>
+<body>
+    <div id="globeViz"></div>
+    <script src="https://unpkg.com/three@0.125.2/build/three.min.js"></script>
+    <script src="https://unpkg.com/globe.gl@2.15.6/build/globe.gl.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        const hongKongCoords = { lat: 22.3193, lng: 114.1694 };
+        //const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQfSw3lFV-lNn3Lo3Qav1LbGN24x8FSKKL5xDh2fjLiPQNUhUVfYQU0IGyhbZWs4u0QYmVog0k5ayPo/pub?output=csv'; // Replace with the actual URL
+
+        const csvUrl = 'C:\GameTech\Coding Challenge\test.csv'; 
+
+        // Fetch coordinates from Restcountries API
+        function fetchCoordinates(country) {
+            return fetch(`https://restcountries.com/v3.1/name/${country}`)
+                .then(response => response.json())
+                .then(data => {
+                    const countryData = data[0];
+                    return { lat: countryData.latlng[0], lng: countryData.latlng[1] };
+                })
+                .catch(error => {
+                    console.error('Error fetching coordinates:', error);
+                });
+        }
+
+        // Initialize the globe
+        const world = Globe()
+            (document.getElementById('globeViz'))
+            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+            
+
+        // Fetch and parse the CSV file
+        //const FindingsParse = ([timestamp, findingID, how, where, origin, emotion, email]) => ({ timestamp, findingID, how, where, origin, emotion, email})
+        function fetchCountriesFromCsv() {
+            return fetch(csvUrl)
+                .then(response => response.text())
+                .then(csvText => {
+                    const data = Papa.parse(csvText, { header: true });
+                    return data.data.map(row => row['Where did you find it?']); // Updated column name
+                })
+                .catch(error => {
+                    console.error('Error fetching CSV:', error);
+                });
+        }
+
+        // Create arcs from Hong Kong to the countries
+        function createArcs() {
+            fetchCountriesFromCsv().then(countries => {
+                const arcData = [];
+                countries.forEach(country => {
+                    fetchCoordinates(country).then(coords => {
+                        if (coords) {
+                            arcData.push({
+                                startLat: hongKongCoords.lat,
+                                startLng: hongKongCoords.lng,
+                                endLat: coords.lat,
+                                endLng: coords.lng,
+                                color: 'blue'
+                            });
+                            world
+                                .arcsData(arcData)
+                                .arcColor('color')
+                                .arcAltitudeAutoScale(0.5)
+                                .arcStroke('0.5');
+                        }
+                    });
+                });
+                
+            });
+        }
+
+        fetchCountriesFromCsv().then(countries => {
+            createArcs(countries);
+        });
+        // Initial creation of arcs
+        //createArcs();
+    </script>
+</body>
+</html>
